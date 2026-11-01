@@ -6,3 +6,11 @@ __pycache__/
 .pytest_cache/
 .local-storage/
 backend/.local-storage/
+
+.venv/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+work/

@@ -31,6 +31,7 @@ import {
   Command,
   Plus,
   LogOut,
+  MoreHorizontal,
 } from "lucide-react";
 import { useApp } from "../lib/store";
 import { Modal } from "./ui";
@@ -102,6 +103,7 @@ export default function Layout() {
     [user, setUser] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const mobileTrigger = useRef<HTMLButtonElement | null>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -118,9 +120,11 @@ export default function Layout() {
   }, [mobile]);
   useEffect(() => {
     if (!mobile) return;
-    const previous = document.querySelector<HTMLElement>(
-      'button[aria-label="Open navigation"]',
-    );
+    const previous =
+      mobileTrigger.current ||
+      document.querySelector<HTMLElement>(
+        'button[aria-label="Open navigation"]',
+      );
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     sidebarRef.current
@@ -266,7 +270,10 @@ export default function Layout() {
           <div className="breadcrumb">
             <button
               className="icon-button mobile-only"
-              onClick={() => setMobile(true)}
+              onClick={(event) => {
+                mobileTrigger.current = event.currentTarget;
+                setMobile(true);
+              }}
               aria-label="Open navigation"
               aria-expanded={mobile}
               aria-controls="workspace-navigation"
@@ -326,9 +333,19 @@ export default function Layout() {
         </header>
         <div className="demo-strip">
           <span>
-            <span className="status-dot" /> Local workspace{" "}
+            <span
+              className={`status-dot ${state.backendError ? "is-offline" : ""}`}
+            />{" "}
+            {state.backendLoading
+              ? "Connecting to workspace"
+              : state.backendError
+                ? "Local workspace"
+                : "Workspace connected"}{" "}
             <span className="strip-extra">
-              · Live services are not connected
+              ·{" "}
+              {state.backendError
+                ? "Backend unavailable"
+                : "Profile and resume API"}
             </span>
           </span>
           <button onClick={() => update({ demo: !state.demo })}>
@@ -348,6 +365,36 @@ export default function Layout() {
             Help & feedback <ArrowUpRight size={12} />
           </Link>
         </footer>
+        <nav className="mobile-bottom-nav" aria-label="Quick navigation">
+          <NavLink end to="/">
+            <LayoutDashboard size={19} />
+            <span>Overview</span>
+          </NavLink>
+          <NavLink to="/opportunities">
+            <Compass size={19} />
+            <span>Discover</span>
+          </NavLink>
+          <NavLink to="/roadmap">
+            <Route size={19} />
+            <span>Roadmap</span>
+          </NavLink>
+          <NavLink to="/applications">
+            <Columns3 size={19} />
+            <span>Applications</span>
+          </NavLink>
+          <button
+            onClick={(event) => {
+              mobileTrigger.current = event.currentTarget;
+              setMobile(true);
+            }}
+            aria-expanded={mobile}
+            aria-controls="workspace-navigation"
+            aria-label="More navigation"
+          >
+            <MoreHorizontal size={20} />
+            <span>More</span>
+          </button>
+        </nav>
       </div>
       {search && (
         <Modal title="Jump to your next move" onClose={() => setSearch(false)}>
@@ -361,6 +408,29 @@ export default function Layout() {
             />
             <Command size={16} />
           </div>
+          {!query && (
+            <div className="command-quick-actions">
+              <span className="eyebrow">QUICK ACTIONS</span>
+              <button
+                onClick={() => {
+                  navigate("/applications?add=1");
+                  setSearch(false);
+                }}
+              >
+                <Plus size={16} />
+                Add an application<span>Local tracker</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate("/resume");
+                  setSearch(false);
+                }}
+              >
+                <FileText size={16} />
+                Continue your resume<span>Resume Studio</span>
+              </button>
+            </div>
+          )}
           <div className="search-results">
             {links
               .filter((l) => l.name.toLowerCase().includes(query.toLowerCase()))

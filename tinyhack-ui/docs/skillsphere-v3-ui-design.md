@@ -1,5 +1,7 @@
 # SkillSphere V3 — UI design & implementation report
 
+> Historical report from the initial frontend implementation. Backend integration and the current UI have since changed. Use [design.md](../design.md) and [the current refinement report](ui-refinement-report.md) for current behavior and validation.
+
 ## Status and provenance
 
 Implemented on the separate `skillsphere-v3` branch in an initially empty repository. No existing frontend, V2, authentication implementation, backend contract, or working feature was present. The remote advertised no refs during inspection. The chosen stack is React 19, TypeScript, React Router, Vite, Tailwind CSS 4, and Lucide.

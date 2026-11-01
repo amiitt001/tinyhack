@@ -67,3 +67,14 @@ ruff check .
 The test suite uses an isolated SQLite test double, signed test JWTs, fake storage, and
 controlled DOCX fixtures. Live ADK/Gemini calls require credentials. Local PostgreSQL migration
 and end-to-end acceptance require a running local PostgreSQL service.
+
+## Milestone 4 — Opportunity discovery
+
+The additive discovery foundation provides authenticated run/status/results, validated shared
+listing details, and user-scoped saved opportunities. It is disabled by default pending TinyFish
+configuration, current source-access review, and suitable deployment networking. It does not
+change the frontend or the original root TinyFish demo.
+
+See [API, setup, source policies, migrations and tests](docs/opportunity-discovery.md),
+[verified SDK contract and live-status limitations](docs/tinyfish-contract.md), and
+[implementation report](docs/milestone4-report.md).

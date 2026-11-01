@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
@@ -8,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -103,6 +105,31 @@ class Opportunity(TimestampMixin, Base):
         DateTime(timezone=True), server_default=func.now()
     )
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    description: Mapped[str | None] = mapped_column(Text)
+    location: Mapped[str | None] = mapped_column(String(255))
+    work_mode: Mapped[str | None] = mapped_column(String(32))
+    employment_type: Mapped[str | None] = mapped_column(String(32))
+    experience_requirement: Mapped[str | None] = mapped_column(Text)
+    required_skills: Mapped[list | None] = mapped_column(JSON)
+    preferred_skills: Mapped[list | None] = mapped_column(JSON)
+    salary_min: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    salary_max: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    salary_currency: Mapped[str | None] = mapped_column(String(3))
+    salary_unit: Mapped[str | None] = mapped_column(String(32))
+    stipend: Mapped[str | None] = mapped_column(String(255))
+    application_url: Mapped[str | None] = mapped_column(String(2048))
+    canonical_url: Mapped[str | None] = mapped_column(String(2048), unique=True)
+    source_external_id: Mapped[str | None] = mapped_column(String(255))
+    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_attempted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    extraction_status: Mapped[str | None] = mapped_column(String(32))
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    fingerprint: Mapped[str | None] = mapped_column(String(64), index=True)
+    __table_args__ = (
+        UniqueConstraint("source_id", "source_external_id", name="uq_opportunity_source_external"),
+    )
 
 
 class Application(TimestampMixin, Base):
