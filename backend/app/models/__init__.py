@@ -33,3 +33,12 @@ __all__ = [
     "User",
     "UserSkill",
 ]
+
+from app.models.discovery import (
+    DiscoveryRun,
+    OpportunityIdentity,
+    SavedOpportunity,
+    SourceObservation,
+)
+
+__all__ += ["DiscoveryRun", "OpportunityIdentity", "SavedOpportunity", "SourceObservation"]

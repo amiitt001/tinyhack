@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,16 @@ class Settings(BaseSettings):
     agent_retry_base_seconds: float = 1.0
     tinyfish_api_key: str | None = None
     tinyfish_base_url: str | None = None
+    tinyfish_timeout_seconds: float = Field(default=10, ge=1, le=30)
+    tinyfish_max_attempts: int = Field(default=3, ge=1, le=4)
+    tinyfish_retry_base_seconds: float = Field(default=0.5, ge=0, le=2)
+    discovery_enabled: bool = False
+    discovery_official_source_reviewed: bool = False
+    discovery_workers: int = Field(default=2, ge=1, le=4)
+    discovery_queue_size: int = Field(default=4, ge=0, le=16)
+    discovery_timeout_seconds: int = Field(default=120, ge=10, le=300)
+    discovery_max_results: int = Field(default=10, ge=1, le=20)
+    discovery_search_pages: int = Field(default=1, ge=1, le=3)
     cors_origins: str = "http://localhost:3000"
     retention_temp_upload_hours: int = 24
     retention_deleted_document_days: int = 30

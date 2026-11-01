@@ -1,6 +1,7 @@
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,12 +10,25 @@ from fastapi.responses import ORJSONResponse
 from app.api.v1.router import router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.discovery.errors import DiscoveryError
+from app.discovery.execution import DiscoveryExecutor
 
 configure_logging()
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    application.state.discovery_executor = DiscoveryExecutor(settings)
+    try:
+        yield
+    finally:
+        application.state.discovery_executor.close()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="SkillSphere V3 API",
     version="0.1.0",
     default_response_class=ORJSONResponse,
@@ -46,3 +60,10 @@ async def request_context(request: Request, call_next):
 
 
 app.include_router(router)
+
+
+@app.exception_handler(DiscoveryError)
+async def discovery_error_handler(request: Request, exc: DiscoveryError):
+    return ORJSONResponse(
+        status_code=exc.status_code, content={"detail": {"code": exc.code, "message": str(exc)}}
+    )
