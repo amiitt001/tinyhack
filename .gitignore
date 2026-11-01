@@ -1,6 +1,8 @@
-node_modules/
-dist/
-.env*
-playwright-report/
-test-results/
-*.tsbuildinfo
+.env
+.venv/
+__pycache__/
+.idea/
+*.py[cod]
+.pytest_cache/
+.local-storage/
+backend/.local-storage/
