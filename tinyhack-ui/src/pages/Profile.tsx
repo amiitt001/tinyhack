@@ -1,9 +1,377 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, UserRound, Plus, ArrowLeft, FileText } from 'lucide-react';
-import { useApp, type Profile } from '../lib/store';
-import { Card, PageHead, UploadResume, Badge } from '../components/ui';
-export const fields: [keyof Profile,string,string][]=[['name','Full name','Your name'],['role','Target role','e.g. Frontend Engineer'],['location','Preferred location','e.g. Bengaluru or Remote'],['education','Education','Degree, institution, graduation year'],['skills','Technical skills','Separate skills with commas'],['experience','Experience','Roles, responsibilities, and outcomes'],['projects','Projects & achievements','Projects, certifications, and achievements'],['interests','Career interests','What kind of work excites you?']];
-export default function ProfilePage(){const {state,update,toast,log}=useApp();const [form,setForm]=useState(state.profile);const [tab,setTab]=useState('Overview');useEffect(()=>setForm(state.profile),[state.profile]);return <><PageHead eyebrow="THE FOUNDATION OF YOUR JOURNEY" title="My Career Profile" description="A living picture of your skills, experience, and ambitions." action={<UploadResume/>}/>{state.backendLoading&&<p className="muted" role="status">Loading your profile from the backend…</p>}{state.backendError&&<p className="muted" role="alert">{state.backendError} <button className="text-link" type="button" onClick={()=>window.location.reload()}>Retry</button></p>}<div className="profile-banner"><span className="large-avatar">{form.name?.[0]||<UserRound/>}</span><div><h2>{form.name||'Your story starts here'}</h2><p>{form.role||'Add a career target to personalize your workspace'}</p><Badge>{form.location||'Location not set'}</Badge></div><div className="profile-progress"><strong>{Math.round(Object.values(state.profile).filter(Boolean).length/8*100)}%</strong><span>Profile complete</span><progress value={Object.values(state.profile).filter(Boolean).length} max="8"/></div></div><div className="tabs">{['Overview','Experience','Skills & interests','Documents'].map(t=><button className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div>{tab==='Documents'?<Card title="Resume & documents"><p className="muted">Uploaded resumes are stored privately and parsed by the backend.</p>{state.resumes.length?state.resumes.map(resume=><div className="activity-line" key={resume.id}><FileText size={16}/><p><strong>{resume.filename}</strong><br/><span className="muted">{resume.status}</span></p></div>):<p className="muted">No backend resumes uploaded yet.</p>}<UploadResume/>{state.analysis&&<div className="card-bottom"><span><strong>Career analysis ready:</strong> {state.analysis.career_paths.map(path=>path.title).join(', ')}</span><span className="muted">Saved by the backend</span></div>}</Card>:<Card title={tab==='Overview'?'Your professional story':tab} detail="Your changes stay in this browser. No information is inferred from uploads."><form onSubmit={e=>{e.preventDefault();update({profile:form});log('Career profile updated');toast('Profile saved to the backend.');}} className="form-grid">{fields.filter(([key])=>tab==='Overview'||tab==='Experience'&&['education','experience','projects'].includes(key)||tab==='Skills & interests'&&['skills','interests','role','location'].includes(key)).map(([key,label,placeholder])=><label key={key} className={['projects','experience','interests'].includes(key)?'span-2':''}>{label}{['projects','experience','interests'].includes(key)?<textarea rows={4} value={form[key]} placeholder={placeholder} onChange={e=>setForm({...form,[key]:e.target.value})}/>:<input required={key==='name'} value={form[key]} placeholder={placeholder} onChange={e=>setForm({...form,[key]:e.target.value})}/>}</label>)}<div className="form-actions span-2"><span className="muted">Review your information before saving.</span><button className="button" type="submit"><Check size={16}/>Save changes</button></div></form></Card>}</>;}
-const steps=['Welcome','Personal details','Education','Career stage','Technical skills','Career interests','Target roles','Work location','Your resume','Review profile','Ready to begin'];
-export function Onboarding(){const {state,update,log}=useApp();const [form,setForm]=useState(state.profile);const [step,setStep]=useState(0);const [stage,setStage]=useState('Student');const navigate=useNavigate();const keys:Partial<Record<number,keyof Profile>>={1:'name',2:'education',4:'skills',5:'interests',6:'role',7:'location'};const key=keys[step];return <div className="onboarding"><div className="eyebrow">MAKE ROOM FOR YOUR NEXT CHAPTER</div><div className="step-label">Step {step+1} of {steps.length}<span>{Math.round((step+1)/steps.length*100)}%</span></div><progress value={step+1} max={steps.length}/><Card><Badge tone="orange">YOUR CAREER, YOUR PACE</Badge><h1>{step===0?'A little direction. A world of possibility.':steps[step]}</h1><p className="muted">{step===0?'Let’s build a workspace around where you are and where you want to go.':step===9?'Review and correct your details. You can always update them later.':'A few details help you turn ambition into a practical next step.'}</p><form onSubmit={e=>{e.preventDefault();update({profile:form});if(step===10){log(`Onboarding completed · ${stage}`);navigate('/');}else setStep(step+1);}}>{key&&<label>{fields.find(f=>f[0]===key)?.[1]}<input required={step===1||step===6} value={form[key]} placeholder={fields.find(f=>f[0]===key)?.[2]} onChange={e=>setForm({...form,[key]:e.target.value})}/></label>}{step===3&&<div className="option-grid">{['Student','Fresh graduate','Early-career professional','Career changer'].map(s=><button type="button" className={`option ${stage===s?'selected':''}`} onClick={()=>setStage(s)} key={s}>{s}{stage===s&&<Check size={17}/>}</button>)}</div>}{step===8&&<><UploadResume/><p className="muted">Parsing is not connected. Continue with your manually entered profile.</p></>}{step===9&&<dl className="review-list">{fields.map(([k,l])=><div key={k}><dt>{l}</dt><dd>{form[k]||'Not provided'}<button className="text-link" type="button" aria-label={`Edit ${l}`} onClick={()=>setStep(Number(Object.keys(keys).find(i=>keys[Number(i)]===k)||1))}><Plus size={13}/>Edit</button></dd></div>)}</dl>}{step===10&&<div className="success-panel"><Check size={32}/><h2>Your local workspace is ready.</h2><p>Live career analysis requires an AI service. Start by exploring your roadmap and recording your own goals.</p></div>}<div className="form-actions">{step>0?<button type="button" className="button secondary" onClick={()=>setStep(step-1)}><ArrowLeft size={15}/>Back</button>:<span/>}<div className="inline-actions">{step>1&&step<9&&step!==6&&<button type="button" className="text-link" onClick={()=>{update({profile:form});setStep(step+1);}}>Skip for now</button>}<button type="submit" className="button">{step===0?'Let’s get started':step===10?'Open my workspace':'Save & continue'}<ArrowRight size={16}/></button></div></div></form></Card><p className="onboarding-note">Your information stays on this device. You’re always in control.</p></div>;}
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  Check,
+  UserRound,
+  Plus,
+  ArrowLeft,
+  FileText,
+} from "lucide-react";
+import { useApp, type Profile } from "../lib/store";
+import { Card, PageHead, UploadResume, Badge } from "../components/ui";
+export const fields: [keyof Profile, string, string][] = [
+  ["name", "Full name", "Your name"],
+  ["role", "Target role", "e.g. Frontend Engineer"],
+  ["location", "Preferred location", "e.g. Bengaluru or Remote"],
+  ["education", "Education", "Degree, institution, graduation year"],
+  ["skills", "Technical skills", "Separate skills with commas"],
+  ["experience", "Experience", "Roles, responsibilities, and outcomes"],
+  [
+    "projects",
+    "Projects & achievements",
+    "Projects, certifications, and achievements",
+  ],
+  ["interests", "Career interests", "What kind of work excites you?"],
+];
+export default function ProfilePage() {
+  const { state, update, toast, log } = useApp();
+  const [form, setForm] = useState(state.profile);
+  const [tab, setTab] = useState("Overview");
+  useEffect(() => setForm(state.profile), [state.profile]);
+  return (
+    <>
+      <PageHead
+        eyebrow="THE FOUNDATION OF YOUR JOURNEY"
+        title="My Career Profile"
+        description="A living picture of your skills, experience, and ambitions."
+        action={<UploadResume />}
+      />
+      {state.backendLoading && (
+        <p className="muted" role="status">
+          Loading your profile from the backend…
+        </p>
+      )}
+      {state.backendError && (
+        <p className="muted" role="alert">
+          {state.backendError}{" "}
+          <button
+            className="text-link"
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </p>
+      )}
+      <div className="profile-banner">
+        <span className="large-avatar">{form.name?.[0] || <UserRound />}</span>
+        <div>
+          <h2>{form.name || "Your story starts here"}</h2>
+          <p>
+            {form.role || "Add a career target to personalize your workspace"}
+          </p>
+          <Badge>{form.location || "Location not set"}</Badge>
+        </div>
+        <div className="profile-progress">
+          <strong>
+            {Math.round(
+              (Object.values(state.profile).filter(Boolean).length / 8) * 100,
+            )}
+            %
+          </strong>
+          <span>Profile complete</span>
+          <progress
+            value={Object.values(state.profile).filter(Boolean).length}
+            max="8"
+          />
+        </div>
+      </div>
+      <div className="tabs">
+        {["Overview", "Experience", "Skills & interests", "Documents"].map(
+          (t) => (
+            <button
+              className={tab === t ? "active" : ""}
+              key={t}
+              onClick={() => setTab(t)}
+            >
+              {t}
+            </button>
+          ),
+        )}
+      </div>
+      {tab === "Documents" ? (
+        <Card title="Resume & documents">
+          <p className="muted">
+            Uploaded resumes are stored privately and parsed by the backend.
+          </p>
+          {state.resumes.length ? (
+            state.resumes.map((resume) => (
+              <div className="activity-line" key={resume.id}>
+                <FileText size={16} />
+                <p>
+                  <strong>{resume.filename}</strong>
+                  <br />
+                  <span className="muted">{resume.status}</span>
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="muted">No backend resumes uploaded yet.</p>
+          )}
+          <UploadResume />
+          {state.analysis && (
+            <div className="card-bottom">
+              <span>
+                <strong>Career analysis ready:</strong>{" "}
+                {state.analysis.career_paths
+                  .map((path) => path.title)
+                  .join(", ")}
+              </span>
+              <span className="muted">Saved by the backend</span>
+            </div>
+          )}
+        </Card>
+      ) : (
+        <Card
+          title={tab === "Overview" ? "Your professional story" : tab}
+          detail="Review your details before saving them to your connected workspace."
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              update({ profile: form });
+              log("Career profile updated");
+              toast("Profile saved to the backend.");
+            }}
+            className="form-grid"
+          >
+            {fields
+              .filter(
+                ([key]) =>
+                  tab === "Overview" ||
+                  (tab === "Experience" &&
+                    ["education", "experience", "projects"].includes(key)) ||
+                  (tab === "Skills & interests" &&
+                    ["skills", "interests", "role", "location"].includes(key)),
+              )
+              .map(([key, label, placeholder]) => (
+                <label
+                  key={key}
+                  className={
+                    ["projects", "experience", "interests"].includes(key)
+                      ? "span-2"
+                      : ""
+                  }
+                >
+                  {label}
+                  {["projects", "experience", "interests"].includes(key) ? (
+                    <textarea
+                      rows={4}
+                      value={form[key]}
+                      placeholder={placeholder}
+                      onChange={(e) =>
+                        setForm({ ...form, [key]: e.target.value })
+                      }
+                    />
+                  ) : (
+                    <input
+                      required={key === "name"}
+                      value={form[key]}
+                      placeholder={placeholder}
+                      onChange={(e) =>
+                        setForm({ ...form, [key]: e.target.value })
+                      }
+                    />
+                  )}
+                </label>
+              ))}
+            <div className="form-actions span-2">
+              <span className="muted">
+                Review your information before saving.
+              </span>
+              <button className="button" type="submit">
+                <Check size={16} />
+                Save changes
+              </button>
+            </div>
+          </form>
+        </Card>
+      )}
+    </>
+  );
+}
+const steps = [
+  "Welcome",
+  "Personal details",
+  "Education",
+  "Career stage",
+  "Technical skills",
+  "Career interests",
+  "Target roles",
+  "Work location",
+  "Your resume",
+  "Review profile",
+  "Ready to begin",
+];
+export function Onboarding() {
+  const { state, update, log } = useApp();
+  const [form, setForm] = useState(state.profile);
+  const [step, setStep] = useState(0);
+  const [stage, setStage] = useState("Student");
+  const navigate = useNavigate();
+  const keys: Partial<Record<number, keyof Profile>> = {
+    1: "name",
+    2: "education",
+    4: "skills",
+    5: "interests",
+    6: "role",
+    7: "location",
+  };
+  const key = keys[step];
+  return (
+    <div className="onboarding">
+      <div className="eyebrow">MAKE ROOM FOR YOUR NEXT CHAPTER</div>
+      <div className="step-label">
+        Step {step + 1} of {steps.length}
+        <span>{Math.round(((step + 1) / steps.length) * 100)}%</span>
+      </div>
+      <progress value={step + 1} max={steps.length} />
+      <Card>
+        <Badge tone="orange">YOUR CAREER, YOUR PACE</Badge>
+        <h1>
+          {step === 0
+            ? "A little direction. A world of possibility."
+            : steps[step]}
+        </h1>
+        <p className="muted">
+          {step === 0
+            ? "Let’s build a workspace around where you are and where you want to go."
+            : step === 9
+              ? "Review and correct your details. You can always update them later."
+              : "A few details help you turn ambition into a practical next step."}
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            update({ profile: form });
+            if (step === 10) {
+              log(`Onboarding completed · ${stage}`);
+              navigate("/");
+            } else setStep(step + 1);
+          }}
+        >
+          {key && (
+            <label>
+              {fields.find((f) => f[0] === key)?.[1]}
+              <input
+                required={step === 1 || step === 6}
+                value={form[key]}
+                placeholder={fields.find((f) => f[0] === key)?.[2]}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+              />
+            </label>
+          )}
+          {step === 3 && (
+            <div className="option-grid">
+              {[
+                "Student",
+                "Fresh graduate",
+                "Early-career professional",
+                "Career changer",
+              ].map((s) => (
+                <button
+                  type="button"
+                  className={`option ${stage === s ? "selected" : ""}`}
+                  onClick={() => setStage(s)}
+                  key={s}
+                >
+                  {s}
+                  {stage === s && <Check size={17} />}
+                </button>
+              ))}
+            </div>
+          )}
+          {step === 8 && (
+            <>
+              <UploadResume />
+              <p className="muted">
+                Upload parsing uses your connected workspace. You can also
+                continue with your manually entered profile.
+              </p>
+            </>
+          )}
+          {step === 9 && (
+            <dl className="review-list">
+              {fields.map(([k, l]) => (
+                <div key={k}>
+                  <dt>{l}</dt>
+                  <dd>
+                    {form[k] || "Not provided"}
+                    <button
+                      className="text-link"
+                      type="button"
+                      aria-label={`Edit ${l}`}
+                      onClick={() =>
+                        setStep(
+                          Number(
+                            Object.keys(keys).find(
+                              (i) => keys[Number(i)] === k,
+                            ) || 1,
+                          ),
+                        )
+                      }
+                    >
+                      <Plus size={13} />
+                      Edit
+                    </button>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {step === 10 && (
+            <div className="success-panel">
+              <Check size={32} />
+              <h2>Your local workspace is ready.</h2>
+              <p>
+                Live career analysis requires an AI service. Start by exploring
+                your roadmap and recording your own goals.
+              </p>
+            </div>
+          )}
+          <div className="form-actions">
+            {step > 0 ? (
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setStep(step - 1)}
+              >
+                <ArrowLeft size={15} />
+                Back
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="inline-actions">
+              {step > 1 && step < 9 && step !== 6 && (
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={() => {
+                    update({ profile: form });
+                    setStep(step + 1);
+                  }}
+                >
+                  Skip for now
+                </button>
+              )}
+              <button type="submit" className="button">
+                {step === 0
+                  ? "Let’s get started"
+                  : step === 10
+                    ? "Open my workspace"
+                    : "Save & continue"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        </form>
+      </Card>
+      <p className="onboarding-note">
+        Your career profile is saved to your connected workspace. You’re always
+        in control.
+      </p>
+    </div>
+  );
+}

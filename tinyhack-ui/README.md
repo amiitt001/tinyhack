@@ -1,17 +1,48 @@
-# SkillSphere V3
+# SkillSphere V3 UI
 
-A responsive, dark-first career workspace built with React, TypeScript, Vite, Tailwind CSS, and Lucide icons.
+A responsive career workspace built with React 19, TypeScript, Vite, Tailwind CSS and Lucide. The UI uses the existing Python backend for profile basics, uploaded resumes, career analysis and Milestone 4 opportunity APIs.
 
-```sh
+## Run on Linux
+
+From your Tinyhack repository checkout:
+
+~~~sh
+cd tinyhack-ui
 npm ci
 npm run dev
-```
+~~~
 
-Validation: `npm run build`, `npm run lint`, `npm run typecheck`, `npm test`.
-Browser tests use `/usr/bin/chromium`; adjust `playwright.config.ts` for another installation.
+Open the address printed by Vite, normally http://localhost:5173. To access the UI refinement branch from the repository root, run git fetch origin followed by git switch ui-discovery-refinement.
 
-This is a local-first frontend prototype. There is no authentication backend, AI service, live opportunity feed, resume parser, or background monitoring. Optional fictional demo content is explicitly labeled. Profile edits, application tracking, learning tasks, resume drafts, and preferences work locally. Do not store sensitive information on shared devices.
+Vite proxies /api to http://127.0.0.1:8000. To use another backend address:
 
-See [the design and implementation report](docs/skillsphere-v3-ui-design.md).
+~~~sh
+VITE_BACKEND_URL=http://127.0.0.1:8000 npm run dev
+~~~
 
-The latest UI pass applies the 21st.dev-inspired component selection to the existing charcoal/orange product identity. See `design.md` for the current dashboard composition, data behavior, and responsive rules. Source changes are in `src/pages/Overview.tsx`, `src/components/Layout.tsx`, and `src/refinements.css`.
+Start and configure the backend separately using [backend/README.md](../backend/README.md), including its migrations. Preserve existing environment settings and credentials. The existing development token helper requires AUTH_MODE=development; this UI pass does not implement production sign-in or token issuance.
+
+## Where data lives
+
+| Capability | Storage / dependency |
+| --- | --- |
+| Profile summary, career stage, completion | Existing profile API; additional presentation fields remain local |
+| Uploaded resumes and career analysis | Existing backend APIs and configured providers |
+| Discovery runs, results, details and saved opportunities | Milestone 4 API and authenticated user identity |
+| Applications, roadmap completion, resume text drafts, practice answers, settings | Browser local storage |
+| Optional fictional opportunities and demo saves | Separate local demo state |
+
+Discovery is disabled by default in the backend. The UI displays source availability and does not enable providers. The current official-careers adapter covers approved Canonical paths only. See [discovery setup and limitations](../backend/docs/opportunity-discovery.md). A running API does not by itself establish live discovery availability.
+
+Without the backend, local tools and the explicitly labeled demo remain usable; server-dependent features show connection errors.
+
+## Verify
+
+~~~sh
+npm run build
+npm test
+~~~
+
+Build includes TypeScript checking. Playwright uses /usr/bin/chromium; adjust playwright.config.ts for your local browser installation. Tests intercept the API with controlled fixtures and make no live TinyFish calls.
+
+See [design.md](design.md) for the getdesign.md and 21st.dev reference selection, and [the current implementation report](docs/ui-refinement-report.md) for scope and validation.

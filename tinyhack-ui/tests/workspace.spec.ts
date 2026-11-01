@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 const routes = [
   "/",
   "/profile",
@@ -52,7 +52,14 @@ test("profile saves across reloads and roadmap records real actions", async ({
   await page.getByLabel("Full name").fill("Alex Morgan");
   await page.getByLabel("Target role").fill("Frontend Engineer");
   await page.getByLabel("Technical skills").fill("React, CSS");
-  await page.getByRole("button", { name: "Save changes" }).click();
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/career-profile") &&
+        response.request().method() === "PUT",
+    ),
+    page.getByRole("button", { name: "Save changes" }).click(),
+  ]);
   await page.reload();
   await expect(page.getByLabel("Full name")).toHaveValue("Alex Morgan");
   await page.goto("/roadmap");
@@ -165,7 +172,14 @@ test("dashboard reflects saved profile and learning progress without fabricated 
   await page.goto("/profile");
   await page.getByLabel("Full name").fill("Taylor Reed");
   await page.getByLabel("Target role").fill("Frontend Engineer");
-  await page.getByRole("button", { name: "Save changes" }).click();
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/career-profile") &&
+        response.request().method() === "PUT",
+    ),
+    page.getByRole("button", { name: "Save changes" }).click(),
+  ]);
   await page.goto("/roadmap");
   await page
     .getByRole("button", { name: "Review JavaScript fundamentals" })

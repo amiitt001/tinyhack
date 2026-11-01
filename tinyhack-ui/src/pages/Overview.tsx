@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { fetchSaved } from "../lib/opportunities";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -22,6 +24,17 @@ import { Card, Badge } from "../components/ui";
 
 export default function Overview() {
   const { state } = useApp();
+  const [savedCount, setSavedCount] = useState<number | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    if (state.demo) return () => controller.abort();
+    fetchSaved(0, 1, controller.signal)
+      .then((page) => setSavedCount(page.total))
+      .catch(() => {
+        if (!controller.signal.aborted) setSavedCount(null);
+      });
+    return () => controller.abort();
+  }, [state.demo]);
   const { profile } = state;
   const complete = Object.values(profile).filter((value) =>
     value.trim(),
@@ -56,8 +69,12 @@ export default function Overview() {
     },
     {
       label: "Saved opportunities",
-      value: state.saved.length,
-      note: "Your personal shortlist",
+      value: state.demo ? state.saved.length : savedCount,
+      note: state.demo
+        ? "Demo shortlist on this device"
+        : savedCount === null
+          ? "Connect to load your shortlist"
+          : "Saved with your workspace",
       icon: Bookmark,
       path: "/opportunities",
       tone: "purple",
@@ -139,6 +156,59 @@ export default function Overview() {
         </span>
       </div>
 
+      <section className="today-panel" aria-labelledby="today-heading">
+        <div className="today-intro">
+          <span className="today-icon">
+            <Sparkles size={19} />
+          </span>
+          <div>
+            <h2 id="today-heading">A little progress, today.</h2>
+            <p>Three useful places to put your energy.</p>
+          </div>
+        </div>
+        <div className="today-actions">
+          <Link to="/roadmap">
+            <span className="today-action-icon">
+              <CheckCircle2 size={17} />
+            </span>
+            <div>
+              <small>KEEP LEARNING</small>
+              <strong>{nextTask || "Review your completed roadmap"}</strong>
+            </div>
+            <ArrowUpRight size={15} />
+          </Link>
+          <Link to="/applications">
+            <span className="today-action-icon">
+              <Clock3 size={17} />
+            </span>
+            <div>
+              <small>MAKE YOUR NEXT MOVE</small>
+              <strong>
+                {deadlineCount
+                  ? `${deadlineCount} upcoming follow-up${deadlineCount === 1 ? "" : "s"}`
+                  : "Organize your applications"}
+              </strong>
+            </div>
+            <ArrowUpRight size={15} />
+          </Link>
+          <Link to={score < 100 ? "/profile" : "/opportunities"}>
+            <span className="today-action-icon">
+              <Target size={17} />
+            </span>
+            <div>
+              <small>
+                {score < 100 ? "BUILD YOUR FOUNDATION" : "EXPLORE WHAT’S NEXT"}
+              </small>
+              <strong>
+                {score < 100
+                  ? `${8 - complete} profile sections to complete`
+                  : "Discover opportunities"}
+              </strong>
+            </div>
+            <ArrowUpRight size={15} />
+          </Link>
+        </div>
+      </section>
       <div className="stat-grid dashboard-stats">
         {stats.map((s) => (
           <Link to={s.path} className="stat-card" key={s.label}>
@@ -148,7 +218,9 @@ export default function Overview() {
               </span>
               <ArrowUpRight size={15} />
             </div>
-            <strong>{s.value.toString().padStart(2, "0")}</strong>
+            <strong>
+              {s.value === null ? "—" : s.value.toString().padStart(2, "0")}
+            </strong>
             <h2>{s.label}</h2>
             <p>{s.note}</p>
           </Link>
@@ -319,7 +391,7 @@ export default function Overview() {
               <Circle size={11} />
               {state.demo
                 ? "Sample listings are for exploration only."
-                : "Live opportunity sources are not connected yet."}
+                : "Source availability is shown in Discover."}
             </span>
           </div>
         </Card>

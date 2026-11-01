@@ -4,13 +4,9 @@ import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { Provider } from "./lib/store";
 import Layout from "./components/Layout";
 import Overview from "./pages/Overview";
+import { Opportunities, OpportunityDetail } from "./pages/Opportunities";
 import Profile, { Onboarding } from "./pages/Profile";
-import {
-  Opportunities,
-  OpportunityDetail,
-  Explorer,
-  Companies,
-} from "./pages/Discovery";
+import { Explorer, Companies } from "./pages/Discovery";
 import { Skills, Roadmap, Resume, Interview } from "./pages/Development";
 import { Applications, Monitor, Coach } from "./pages/Execution";
 import {

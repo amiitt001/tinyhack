@@ -1,11 +1,15 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-const TOKEN_KEY = 'skillsphere-v3-token';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+const TOKEN_KEY = "skillsphere-v3-token";
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status?: number) {
+  constructor(
+    message: string,
+    readonly status?: number,
+    readonly code?: string,
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
@@ -50,53 +54,99 @@ export type CareerAnalysis = {
 export function getToken(): string {
   const existing = localStorage.getItem(TOKEN_KEY);
   if (existing) return existing;
-  const token = `dev:${import.meta.env.VITE_DEV_USER_ID || 'local-ui-user'}`;
+  const token = `dev:${import.meta.env.VITE_DEV_USER_ID || "local-ui-user"}`;
   localStorage.setItem(TOKEN_KEY, token);
   return token;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  let response: Response;
+  const callerSignal = init.signal;
+  const abort = () => controller.abort();
+  callerSignal?.addEventListener("abort", abort, { once: true });
+  if (callerSignal?.aborted) controller.abort();
+  const timeout = window.setTimeout(abort, REQUEST_TIMEOUT_MS);
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(`${API_BASE}${path}`, {
       ...init,
       signal: controller.signal,
       headers: {
         Authorization: `Bearer ${getToken()}`,
-        ...(init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(init.body instanceof FormData
+          ? {}
+          : { "Content-Type": "application/json" }),
         ...init.headers,
       },
     });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new ApiError('The backend request timed out. Please try again.');
+    const body =
+      response.status === 204
+        ? undefined
+        : await response.json().catch((error) => {
+            if (controller.signal.aborted) throw error;
+            return undefined;
+          });
+    if (!response.ok) {
+      const detail = body?.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : typeof detail?.message === "string"
+            ? detail.message
+            : Array.isArray(detail)
+              ? detail
+                  .map((item) =>
+                    typeof item?.msg === "string" ? item.msg : "Invalid input",
+                  )
+                  .join(". ")
+              : `Backend request failed (${response.status})`;
+      throw new ApiError(
+        message,
+        response.status,
+        typeof detail?.code === "string" ? detail.code : undefined,
+      );
     }
-    throw new ApiError('The backend is unavailable. Check that the API is running.');
+    if (response.status !== 204 && body === undefined)
+      throw new ApiError(
+        "The backend returned an unreadable response.",
+        response.status,
+      );
+    return body as T;
+  } catch (error) {
+    if (callerSignal?.aborted)
+      throw new DOMException("Request cancelled", "AbortError");
+    if (error instanceof ApiError) throw error;
+    if (controller.signal.aborted)
+      throw new ApiError(
+        "The request timed out. Please try again.",
+        undefined,
+        "request_timeout",
+      );
+    throw new ApiError(
+      "The backend is unavailable. Check your connection and try again.",
+      undefined,
+      "connection_failed",
+    );
   } finally {
     window.clearTimeout(timeout);
+    callerSignal?.removeEventListener("abort", abort);
   }
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new ApiError(
-      body.detail || `Backend request failed (${response.status})`,
-      response.status,
-    );
-  }
-  return response.status === 204 ? (undefined as T) : response.json();
 }
 
 export function fetchProfile() {
-  return request<BackendProfile>('/career-profile');
+  return request<BackendProfile>("/career-profile");
 }
 
 export function fetchResumes() {
-  return request<BackendResume[]>('/resumes');
+  return request<BackendResume[]>("/resumes");
 }
 
 export function deleteResume(resumeId: string) {
-  return request<void>(`/resumes/${encodeURIComponent(resumeId)}`, { method: 'DELETE' });
+  return request<void>(`/resumes/${encodeURIComponent(resumeId)}`, {
+    method: "DELETE",
+  });
 }
 
 export function fetchAnalyses(limit = 20, offset = 0) {
@@ -106,7 +156,9 @@ export function fetchAnalyses(limit = 20, offset = 0) {
 }
 
 export function fetchAnalysis(analysisId: string) {
-  return request<CareerAnalysis>(`/career-analysis/${encodeURIComponent(analysisId)}`);
+  return request<CareerAnalysis>(
+    `/career-analysis/${encodeURIComponent(analysisId)}`,
+  );
 }
 
 export function saveProfile(profile: {
@@ -114,21 +166,21 @@ export function saveProfile(profile: {
   career_stage: string;
   completion_percent: number;
 }) {
-  return request<BackendProfile>('/career-profile', {
-    method: 'PUT',
+  return request<BackendProfile>("/career-profile", {
+    method: "PUT",
     body: JSON.stringify(profile),
   });
 }
 
 export function uploadResume(file: File) {
   const body = new FormData();
-  body.append('file', file);
-  return request<BackendResume>('/resumes', { method: 'POST', body });
+  body.append("file", file);
+  return request<BackendResume>("/resumes", { method: "POST", body });
 }
 
 export function createCareerAnalysis(resumeId: string) {
   return request<CareerAnalysis>(
     `/career-analysis?resume_id=${encodeURIComponent(resumeId)}`,
-    { method: 'POST' },
+    { method: "POST" },
   );
 }
