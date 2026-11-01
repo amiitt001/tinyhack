@@ -15,6 +15,14 @@ from app.models.entities import (
     User,
     UserSkill,
 )
+from app.models.opportunity import (
+    DiscoveryRun,
+    OpportunityDetail,
+    OpportunityEvidence,
+    OpportunitySourceObservation,
+    SavedOpportunity,
+    TinyFishExecution,
+)
 
 __all__ = [
     "Application",
@@ -24,11 +32,17 @@ __all__ = [
     "CareerPreference",
     "CareerProfile",
     "Conversation",
+    "DiscoveryRun",
     "Message",
     "Notification",
     "Opportunity",
+    "OpportunityDetail",
     "OpportunitySource",
+    "OpportunitySourceObservation",
     "Resume",
+    "SavedOpportunity",
+    "OpportunityEvidence",
+    "TinyFishExecution",
     "Skill",
     "User",
     "UserSkill",

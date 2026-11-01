@@ -69,6 +69,10 @@ class ResumeService:
                 raise
             resume.status = "parse_failed"
             resume.parse_error = str(exc)
+        except Exception:
+            if uploaded:
+                self.storage.delete(key)
+            raise
         try:
             return self.repository.create(session, resume)
         except Exception:

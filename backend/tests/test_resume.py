@@ -104,3 +104,27 @@ def test_storage_failure_does_not_leave_uploaded_object():
             b"Ada\nada@example.com",
         )
     assert len(storage.deletions) == 1
+
+
+def test_unexpected_parser_failure_cleans_uploaded_object():
+    storage = FakeStorage()
+
+    class UnexpectedParser:
+        def parse(self, content, mime_type):
+            raise RuntimeError("unexpected parser failure")
+
+    service = ResumeService(
+        Settings(storage_backend="local", local_storage_path="/tmp/unused"),
+        storage=storage,
+        parser=UnexpectedParser(),
+    )
+    with pytest.raises(RuntimeError, match="unexpected parser failure"):
+        service.upload(
+            FakeSession(),
+            AuthenticatedUser(id="user-1", email=None, claims={}),
+            "resume.txt",
+            "text/plain",
+            b"Demo resume",
+        )
+    assert len(storage.uploads) == 1
+    assert storage.deletions == [storage.uploads[0][0]]

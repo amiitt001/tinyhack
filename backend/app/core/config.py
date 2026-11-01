@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     agent_retry_base_seconds: float = 1.0
     tinyfish_api_key: str | None = None
     tinyfish_base_url: str | None = None
+    tinyfish_agent_enabled: bool = True
+    tinyfish_agent_max_concurrency: int = 3
+    tinyfish_agent_timeout_seconds: int = 150
+    tinyfish_max_companies_per_run: int = 10
+    tinyfish_max_jobs_per_company: int = 15
+    tinyfish_cache_ttl_hours: int = 12
     cors_origins: str = "http://localhost:3000"
     retention_temp_upload_hours: int = 24
     retention_deleted_document_days: int = 30

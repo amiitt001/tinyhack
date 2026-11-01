@@ -29,7 +29,11 @@ def upgrade() -> None:
         "career_profiles",
         sa.Column("id", sa.Uuid(), primary_key=True),
         sa.Column(
-            "user_id", sa.String(128), sa.ForeignKey("users.id", ondelete="CASCADE"), unique=True
+            "user_id",
+            sa.String(128),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            unique=True,
+            nullable=False,
         ),
         sa.Column("summary", sa.Text()),
         sa.Column("career_stage", sa.String(64)),
@@ -83,7 +87,11 @@ def upgrade() -> None:
         "career_preferences",
         sa.Column("id", sa.Uuid(), primary_key=True),
         sa.Column(
-            "user_id", sa.String(128), sa.ForeignKey("users.id", ondelete="CASCADE"), unique=True
+            "user_id",
+            sa.String(128),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            unique=True,
+            nullable=False,
         ),
         sa.Column("target_roles", sa.Text()),
         sa.Column("locations", sa.Text()),

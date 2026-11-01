@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
 
 from app.core.config import Settings, get_settings
@@ -13,6 +14,9 @@ class AuthenticatedUser:
     id: str
     email: str | None
     claims: dict
+
+
+_bearer_auth = HTTPBearer(auto_error=False)
 
 
 def verify_supabase_token(token: str, settings: Settings) -> AuthenticatedUser:
@@ -51,12 +55,10 @@ def verify_supabase_token(token: str, settings: Settings) -> AuthenticatedUser:
 
 
 async def get_current_user(
-    request: Request,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_auth)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthenticatedUser:
-    authorization = request.headers.get("Authorization", "")
-    scheme, _, credentials = authorization.partition(" ")
-    if scheme.lower() != "bearer" or not credentials:
+    if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Bearer authentication required",
@@ -65,13 +67,14 @@ async def get_current_user(
     if settings.auth_mode == "development":
         if settings.app_env == "production":
             raise HTTPException(status_code=500, detail="Invalid authentication configuration")
-        if not credentials.startswith("dev:"):
+        token = credentials.credentials
+        if not token.startswith("dev:"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Development bearer token required",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        user_id = credentials.removeprefix("dev:").strip()
+        user_id = token.removeprefix("dev:").strip()
         if not user_id or "/" in user_id or "\\" in user_id:
             raise HTTPException(status_code=401, detail="Invalid development user")
         return AuthenticatedUser(
@@ -79,4 +82,4 @@ async def get_current_user(
             email=f"{user_id}@localhost.invalid",
             claims={"sub": user_id, "auth_mode": "development"},
         )
-    return verify_supabase_token(credentials, settings)
+    return verify_supabase_token(credentials.credentials, settings)

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.exceptions import ConfigurationError, IntegrationError
 from app.core.security import AuthenticatedUser, get_current_user
 from app.db import get_db
 from app.models import CareerAnalysis, Resume
@@ -44,6 +45,10 @@ def create_analysis(
         raise HTTPException(status_code=404, detail="Resume not found")
     try:
         return CareerAnalysisService(get_settings()).run(session, user, resume)
+    except ConfigurationError as exc:
+        raise HTTPException(status_code=503, detail="Career analysis provider is not configured") from exc
+    except IntegrationError as exc:
+        raise HTTPException(status_code=502, detail="Career analysis provider request failed") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -1,6 +1,8 @@
+import os
 from pathlib import Path
 
 import pytest
+from fastapi.security import HTTPAuthorizationCredentials
 
 from app.core.config import Settings
 from app.core.security import AuthenticatedUser, get_current_user
@@ -17,6 +19,9 @@ def test_local_storage_is_private_user_scoped_and_round_trips(tmp_path: Path):
     assert stored.key == key
     assert key.startswith("user-a/")
     assert adapter.download(key) == b"%PDF synthetic"
+    if os.name == "posix":
+        assert (tmp_path.stat().st_mode & 0o777) == 0o700
+        assert ((tmp_path / key).stat().st_mode & 0o777) == 0o600
     assert not (tmp_path.parent / "user-a").exists()
     adapter.delete(key)
     with pytest.raises(Exception, match="not found"):
@@ -41,11 +46,8 @@ def test_production_rejects_development_auth_and_local_storage():
 @pytest.mark.asyncio
 async def test_development_authentication_is_user_scoped():
     settings = Settings(auth_mode="development", app_env="development")
-
-    class Request:
-        headers = {"Authorization": "Bearer dev:user-a"}
-
-    user = await get_current_user(Request(), settings)
+    credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="dev:user-a")
+    user = await get_current_user(credentials, settings)
     assert isinstance(user, AuthenticatedUser)
     assert user.id == "user-a"
     assert user.claims["auth_mode"] == "development"

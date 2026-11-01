@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -22,7 +23,8 @@ class LocalStorageAdapter:
     def __init__(self, settings: Settings, max_size: int = 10 * 1024 * 1024) -> None:
         self.root = Path(settings.local_storage_path).expanduser().resolve()
         self.max_size = max_size
-        self.root.mkdir(parents=True, exist_ok=True)
+        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.root.chmod(0o700)
 
     @staticmethod
     def make_key(user_id: str, extension: str) -> str:
@@ -38,12 +40,21 @@ class LocalStorageAdapter:
         if not content or len(content) > self.max_size:
             raise ValueError("Stored object must be between 1 byte and 10 MB")
         path = self._path(key)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        path.parent.chmod(0o700)
+        descriptor = None
         try:
-            with path.open("xb") as handle:
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "wb") as handle:
+                descriptor = None
                 handle.write(content)
         except FileExistsError as exc:
             raise IntegrationError("Storage object already exists") from exc
+        except Exception:
+            if descriptor is not None:
+                os.close(descriptor)
+            path.unlink(missing_ok=True)
+            raise
         return StoredObject(key=key)
 
     def download(self, key: str) -> bytes:

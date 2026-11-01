@@ -41,6 +41,17 @@ def test_profile_is_owned_by_authenticated_identity(client):
     assert response.json()["summary"] == "Backend engineer"
 
 
+def test_profile_get_initializes_empty_profile(client):
+    response = client.get(
+        "/api/v1/career-profile",
+        headers={"Authorization": f"Bearer {token('user-new')}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["user_id"] == "user-new"
+    assert response.json()["completion_percent"] == 0
+
+
 def test_me_derives_identity_from_token(client):
     response = client.get(
         "/api/v1/users/me", headers={"Authorization": f"Bearer {token('user-2')}"}
