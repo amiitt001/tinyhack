@@ -1,7 +1,7 @@
 # SkillSphere V3 — Milestone 4.3 Audit
 
 **Audit date:** 2026-11-01  
-**Verdict:** Partially ready for a controlled hackathon demonstration. The profile, resume, Gemini analysis, and API persistence paths were exercised locally against disposable PostgreSQL. TinyFish Search succeeded live but returned no candidates for the tested query. TinyFish Agent completed two provider runs remotely, but both outlasted the client polling budget; one completed result was recovered, validated, and reconciled into the disposable database. Do not describe opportunity discovery as a reliably completed end-to-end feature yet.
+**Verdict:** Partially ready for a controlled hackathon demonstration. Profile, resume, Gemini, and API persistence passed. Emergency verification returned 10 live Search results, then the real Agent completed on an exact Search-returned URL after the application's 180-second bound. Its two evidence-bearing outputs were manually recovered and replayed through the existing validation/persistence method and API retrieval. Both were outside the requested India location, neither had evidence for active listing status, and both remained `is_verified=false`. Strict end-to-end live opportunity discovery **failed** because the ordinary API path timed out and required manual recovery.
 
 ## Scope and preservation
 
@@ -47,11 +47,12 @@
 - TinyFish Agent run `48c6c0be-12f4-484a-9db7-73b03b717536`: one-company test through `DiscoveryService` with an explicitly seeded search candidate at `jobs.lever.co/anthropic`; provider `COMPLETED` at 10:15:42 UTC, 130s after start. The application’s 120s polling window expired, storing timeout plus provider ID. A later read-only provider lookup returned a schema-valid result with 0 jobs and 2 Agent-reported errors. That same result was reconciled into the disposable DB; authenticated run, execution, and results reads returned `200`; another user’s run read returned `404`. The candidate input was seeded, so this is not a live Search-to-Agent run.
 - Gemini: one live Google API request completed in 12.2s through the ADK runner. Provider usage/credits were not exposed in the response and are not claimed.
 - Frontend: `npm ci`, `npm run typecheck`, `npm run lint`, and `npm run build` passed. Production dependency audit: 0 findings; full dependency audit: 11 moderate findings in development tooling. No frontend source/lockfile change was made.
+- Emergency TinyFish verification: broad query returned 10 results (`HTTP 200`, 1.826s). Agent run `0ea720fa-a5e5-43f6-a320-36af06338de6` completed after 241s, exceeding the app's 180135ms bound. Provider output contained two jobs with evidence on official Edwards Workday URLs, in Germany and Malaysia. The status prose initially failed the enum schema; a narrow recognized-prefix normalization was added and focused tests pass. Both outputs were recovered and persisted via the existing validation/persistence method, then returned through authenticated APIs with evidence. Listing status lacked evidence, so both remain `unknown` and unverified. This was a manual late-result recovery and fails strict end-to-end readiness; see [LIVE_INTEGRATION_RESULTS.md](LIVE_INTEGRATION_RESULTS.md).
 
 ## Important remaining issues
 
 1. Agent jobs frequently outlive the configured application polling period. Provider work continues after the application records timeout; there is no automatic late-result reconciliation endpoint/worker. The audit reconciled one provider result manually, using its existing run ID.
-2. No live eligible jobs or evidence were returned in the verified Agent runs. Consequently, live evidence persistence, application URL support, and verified listing promotion remain unproven.
+2. The emergency Agent returned two evidence-bearing roles outside the queried India location. Application URLs lacked evidence and were discarded; listing-status evidence was absent, so both records remain unverified. Query/location relevance is not enforced by discovery.
 3. TinyFish API responses expose no credit usage in the inspected SDK response; usage is unknown.
 4. Supabase Auth/Storage were not exercised. Service key is absent and runtime auth/storage mode is development/local.
 5. Opportunity discovery uses in-process FastAPI `BackgroundTasks`, not a durable queue. A process restart can strand a run.

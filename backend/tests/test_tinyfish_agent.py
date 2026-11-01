@@ -64,7 +64,7 @@ def test_real_provider_enum_casing_is_normalized():
                 "evidence_text": "Intern", "confidence": "High",
             }], "missing_fields": [],
         }],
-        "execution_status": "Completed", "errors": [],
+        "execution_status": "Completed successfully. Extracted two jobs.", "errors": [],
     })
     assert result.execution_status == "completed"
     assert result.jobs[0].listing_status == "active"

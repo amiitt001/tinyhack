@@ -17,12 +17,12 @@ Statuses describe evidence collected on 2026-11-01. `PASS` means implementation 
 | Resume Supabase storage | PASS adapter exists | N/A | PARTIAL | NOT_TESTED | Mocked only | PARTIAL |
 | Gemini / ADK career analysis | PASS | PASS (analysis and AgentRun) | PASS | PASS: one live Gemini request | Automated + live API | PASS for one bounded case |
 | Analysis history / idempotency | PASS | PASS | PASS | N/A | PASS; second POST reused ID | PASS |
-| TinyFish Search adapter | PASS | N/A | PASS via discovery | PARTIAL: live 200, zero results | Mocked + one live call | PARTIAL |
+| TinyFish Search adapter | PASS | N/A | PASS via discovery | PASS: emergency live 200, 10 allowlisted results | Mocked + live call | PASS for Search retrieval; candidate truth still requires Agent |
 | Source registry / URL filtering | PASS | N/A | PASS | N/A | PASS | PASS for covered domains |
-| TinyFish Agent queue/poll adapter | PASS | Partial execution rows | PARTIAL | PARTIAL: two provider runs completed after app poll timeout | Mocked queue/poll/schema/timeout tests | PARTIAL |
-| Agent execution ID and late-result handling | PASS stores ID/time | PASS, one late result manually reconciled | PARTIAL | Live provider retrieval passed | Unit and disposable PG | PARTIAL; no automatic reconciliation |
-| Agent structured output | PASS; provider enum casing normalized | PASS for reconciled zero-job result | PARTIAL | Live schema validation passed | Mocked + live | PARTIAL; no positive job payload |
-| Agent evidence and application URL verification | PASS implementation | NOT_TESTED positive evidence | NOT_TESTED positive evidence | NOT_TESTED; zero jobs | Mocked tests only | PARTIAL |
+| TinyFish Agent queue/poll adapter | PASS | PASS after manual late-result recovery | PARTIAL: API task timed out before provider completion | PARTIAL: emergency provider completed after 241s; API task's 180s bound expired | Mocked queue/poll/schema/timeout tests | PARTIAL |
+| Agent execution ID and late-result handling | PASS stores ID/time | PASS, late result manually reconciled | PARTIAL | Live provider retrieval passed | Unit and disposable SQLite | PARTIAL; no automatic reconciliation |
+| Agent structured output | PASS after recognized enum-prefix normalization | PASS; two live roles persisted | PASS after late-result replay | PASS schema validation on recovered result | Mocked + live | PARTIAL; completion exceeded app timeout |
+| Agent evidence and application URL verification | PASS implementation | PASS: two extracted rows with validated field evidence | PASS: detail/evidence returned; `is_verified=false` | PARTIAL: roles at official URLs but outside requested geography; active/apply URL unsupported | Mocked + live provider output | PARTIAL |
 | Opportunity search observations and dedupe | PASS | PASS for empty and seeded candidate workflows | PASS | PARTIAL | Mocked + PG | PARTIAL |
 | Opportunity details/results/pagination | PASS | PASS; PostgreSQL JSON DISTINCT defect fixed | PASS (200 reads) | N/A | Unit + PG API | PASS for empty/seeded rows |
 | Opportunity save/unsave and ownership | PASS | PASS in SQLite unit fixture | PASS via endpoint functions | N/A | PASS mocked DB | PARTIAL (not repeated on PostgreSQL) |

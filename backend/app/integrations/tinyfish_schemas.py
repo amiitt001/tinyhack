@@ -66,7 +66,17 @@ class AgentInvestigation(BaseModel):
     @field_validator("execution_status", mode="before")
     @classmethod
     def normalize_execution_status(cls, value):
-        return value.lower().strip() if isinstance(value, str) else value
+        if not isinstance(value, str):
+            return value
+        value = value.strip().lower()
+        # Some completed provider runs place a short explanation after the
+        # enum value despite the output schema. Accept only a recognized
+        # leading enum token; Pydantic still rejects all other values.
+        parts = value.split(maxsplit=1)
+        if not parts:
+            return value
+        token = parts[0].rstrip(".,:;")
+        return token if token in {"completed", "partial", "failed"} else value
 
 
 # Deliberately use only basic JSON Schema keywords supported by the Agent API.

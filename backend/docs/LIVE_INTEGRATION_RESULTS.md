@@ -2,6 +2,44 @@
 
 **Date:** 2026-11-01. No API key or secret values are included below.
 
+## Emergency live verification (2026-11-01, UTC)
+
+### Live Search
+
+- Exact query: `Software engineering internship India 2026 official company careers`.
+- Search adapter arguments: location `IN`, page `0`, source `official_company_careers`; include domains `careers.google.com`, `jobs.lever.co`, `boards.greenhouse.io`, `apply.workable.com`, `jobs.ashbyhq.com`, `smartrecruiters.com`, `myworkdayjobs.com`, `taleo.net`.
+- HTTP `200 OK`, 1.826 seconds, `total_results=10`, 10 result objects. This was a non-empty Search success; results remain unverified until Agent inspection.
+- URLs returned:
+  1. `https://jobs.ashbyhq.com/cohere/8c035d3d-081d-4c8a-914a-72f4efaad254`
+  2. `https://intel.wd1.myworkdayjobs.com/External/page/f7af6f4ab7131001ecc380a588ca0000`
+  3. `https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/XMLNAME-2027-Intern---Software-Engineer_R171666`
+  4. `https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite`
+  5. `https://kaleris.wd501.myworkdayjobs.com/en-US/kaleris_careers/job/Associate-Software-Engineer-Intern_R-100658`
+  6. `https://thehartford.wd5.myworkdayjobs.com/en-US/Careers_External/job/Tech---Data-Program-Summer-2027---Software-Engineer-Intern--Hartford-_R2626105-1`
+  7. `https://edwards.wd5.myworkdayjobs.com/en-US/EdwardsCareers/job/India-Pune/IT-Internship-Program--January---June-2027-_Req-50762`
+  8. `https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/NVIDIA-2027-Internships--Software-Engineering_JR2023495`
+  9. `https://iqvia.wd1.myworkdayjobs.com/en-US/IQVIA/job/Intern_R1567860`
+  10. `https://intel.wd1.myworkdayjobs.com/en-US/External/job/AI-Software-Engineer-Intern_JR0288261`
+- URL 7 was selected because the live title/snippet said Pune IT internship, January–June 2027. Existing domain and candidate validation accepted it as an unverified candidate. Search snippet text did not establish detailed fields.
+
+### Search-result-to-Agent API workflow
+
+- API discovery run `84c3b139-0a12-419a-bb74-993d71125c1b`; development test identity `tf-emergency-verification`; disposable SQLite database under `/tmp`.
+- The discovery service replayed the exact URL, title, and snippet captured from the single live Search response. No URL or job facts were invented, and no second Search request was made.
+- Agent queue and poll returned HTTP `200`; provider run ID `0ea720fa-a5e5-43f6-a320-36af06338de6`.
+- The Agent exceeded the configured 150-second Agent limit plus the adapter’s 30-second polling allowance. Local duration: `180135 ms`; persisted execution status: `failed`, safe error `timeout`; discovery status: `partially_completed`.
+- At `2026-11-01 10:36:06 UTC`, SDK `runs.get` showed the provider run still `RUNNING`. A final read at `10:36:52 UTC` returned `COMPLETED`, with two jobs. Provider duration was 241 seconds, beyond the configured 150-second Agent limit plus 30-second application polling allowance.
+- The provider returned `execution_status="Completed successfully. Extracted 2 relevant internship/graduate jobs from the Edwards Lifesciences careers site."` despite the enum schema. Pydantic initially rejected it. A narrow validator now accepts a recognized leading enum token only; the focused TinyFish test module passes (6 passed).
+- Provider jobs: `Clinical Graduate Program` (Germany-Field) and `Business Operations Governance & Portfolio Management Intern` (Malaysia-Kuala Lumpur BSC). Output included title, location, description, and other field evidence on official Edwards Workday job URLs. Neither role is in the requested India/Pune location. Application URLs lacked matching evidence and were discarded by the application pipeline. Listing status lacked supporting evidence and was stored as `unknown`; both details are `is_verified=false`.
+- Persisted detail/evidence URLs and field summaries:
+  - `Clinical Graduate Program`, `Germany-Field`: evidence for title, location, posting date, requisition number, description, and eligibility; evidence URL [Edwards Req-51322](https://edwards.wd5.myworkdayjobs.com/en-US/EdwardsCareers/job/Germany-Field/Clinical-Graduate-Program_Req-51322).
+  - `Business Operations Governance & Portfolio Management Intern`, `Malaysia-Kuala Lumpur BSC`: persisted evidence for title, location, requisition number, description, education requirements, and internship duration; evidence URL [Edwards Req-50768](https://edwards.wd5.myworkdayjobs.com/en-US/EdwardsCareers/job/Malaysia-Kuala-Lumpur-BSC/Business-Operations-Governance---Portfolio-Management-Intern_Req-50768).
+  - Evidence confidence was provider-reported `high`; the application also required the value to appear in the evidence text and all evidence/job URLs to pass allowed-domain URL validation. Unsupported `application_url` values and non-evidenced `listing_status=active` were not persisted.
+- Each detail returned six persisted evidence rows. The provider's `job_url` evidence text did not contain the URL value and was rejected by the substring check; the second role's posting-date evidence was not retained by the application validator. No unsupported field was counted as evidence.
+- The late result was reprocessed through the existing `DiscoveryService._investigate_candidate` validation/persistence method, using the already-returned provider result and no new Agent call. The original timeout row remains; an `agent_reconciliation` execution records the completed provider result. The run is completed in disposable SQLite.
+- Authenticated run, execution, results, and detail GETs returned `200`. Results contained the original unextracted Search candidate plus two `extracted` roles with persisted evidence. This demonstrates provider output validation, evidence filtering, persistence, and API retrieval after manual late-result recovery.
+- **Strict outcome: END-TO-END FAIL.** The normal API workflow timed out and required manual result retrieval/reprocessing. The only extracted roles were outside the requested country, their status was not evidence-backed, and neither was marked verified. No automatic recovery exists.
+
 ## TinyFish SDK and timeout finding
 
 The previous adapter used synchronous `agent.run`, holding one HTTP response open for the entire browser task. That operation returned neither a run ID nor a structured result before the SDK read timeout; an HTTP timeout therefore could not distinguish a provider failure from a still-running remote task.
@@ -38,7 +76,7 @@ Provider result enum strings were capitalized (`Completed`, `Active`, `High`) de
 - This reconciliation was performed manually by the audit script. The application does not yet automatically fetch and reconcile a provider run after its local timeout.
 - Provider usage/credits: not exposed.
 
-**Conclusion:** TinyFish Agent can execute remotely and return valid structured output, but completed listings/evidence were not demonstrated. A 30/90-second Agent setting did not bound actual observed provider completion (43/130 seconds). The integration is **PARTIAL**, not a successful listing-discovery claim.
+**Conclusion:** Previous Agent runs returned schema-valid zero-job results after polling timeouts. This emergency Search-derived Agent run remained `RUNNING` after the configured 180-second application bound. No listing evidence was demonstrated. The integration is **PARTIAL**, not a successful listing-discovery claim.
 
 ## Gemini / Google ADK
 
@@ -60,6 +98,7 @@ Provider result enum strings were capitalized (`Completed`, `Active`, `High`) de
 
 - Configuration presence check found Supabase URL/JWT configuration, but runtime modes were `AUTH_MODE=development`, `STORAGE_BACKEND=local`, and no Supabase service key was configured.
 - No live Supabase Auth, JWKS key retrieval, Storage upload, or deletion was attempted. HS256 token verification has offline tests; RS256/ES256 live JWKS is unverified.
+- `python-dotenv` emitted a parse warning for line 3 during settings reads. The TinyFish key was present to Settings and live calls authenticated, but inspect that local line privately; its contents were not read into or printed in the audit.
 
 ## Frontend package checks
 

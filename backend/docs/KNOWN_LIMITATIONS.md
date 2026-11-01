@@ -3,9 +3,9 @@
 ## TinyFish discovery
 
 - Live Search was available but returned zero results for the tested focused query; no live search-to-agent opportunity was found.
-- Provider Agent execution took 43 seconds and 130 seconds in two controlled runs. The application marked one run timed out at its 120-second transport/poll bound while the provider continued; the other smaller-bound task also completed after its poll deadline. Provider run IDs and timeout metadata are retained.
+- Provider Agent execution took 43 seconds, 130 seconds, and 241 seconds in controlled runs. The 241-second run exceeded the application's 180-second transport/poll bound, completed remotely afterward, and required manual retrieval/reprocessing. Provider run IDs and timeout metadata are retained.
 - Late-result recovery is manual. There is no endpoint/worker to inspect outstanding provider runs, reconcile late output, or retry polling after process restart.
-- No live Agent result contained jobs/evidence, so positive evidence-to-field matching, application URL support, and verified-listing promotion remain unproven with a real provider result.
+- The emergency Agent returned two evidence-bearing roles, but both were outside the requested India location. Listing status and application URL were not supported by the returned evidence; the API correctly stored status `unknown`, discarded the unsupported application URL, and reported `is_verified=false`.
 - Provider usage/credits were not exposed by SDK responses and cannot be reported.
 - TinyFish Fetch was not live-tested. Cache-hit and explicit-refresh behavior were not verified against live provider output.
 
