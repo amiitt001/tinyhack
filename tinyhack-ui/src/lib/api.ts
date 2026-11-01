@@ -91,6 +91,15 @@ export function fetchProfile() {
   return request<BackendProfile>('/career-profile');
 }
 
+export function fetchIntegrationStatus() {
+  return request<{
+    status: string;
+    gemini: { configured: boolean; model: string };
+    tinyfish: { configured: boolean; agent_enabled: boolean };
+    supabase: { configured: boolean; storage_backend: string };
+  }>('/integrations');
+}
+
 export function fetchResumes() {
   return request<BackendResume[]>('/resumes');
 }
@@ -131,4 +140,86 @@ export function createCareerAnalysis(resumeId: string) {
     `/career-analysis?resume_id=${encodeURIComponent(resumeId)}`,
     { method: 'POST' },
   );
+}
+
+export type DiscoveryRun = {
+  id: string;
+  user_id: string;
+  status: string;
+  query: string;
+  location: string | null;
+  employment_type: string | null;
+  experience_level: string | null;
+  total_results: number | null;
+  accepted_results: number | null;
+  rejected_results: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Opportunity = {
+  id: string;
+  title: string;
+  company_name: string | null;
+  description: string | null;
+  location: string | null;
+  work_mode: string | null;
+  employment_type: string | null;
+  application_url: string | null;
+  canonical_url: string | null;
+  source_url: string;
+  status: string;
+  extraction_status: string;
+  is_verified: boolean;
+  discovered_at: string;
+};
+
+export type PaginatedOpportunities = {
+  items: Opportunity[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export function createDiscovery(body: {
+  query: string;
+  location?: string;
+  employment_type?: string;
+  experience_level?: string;
+  skills?: string[];
+  sources?: string[];
+  idempotency_key?: string;
+  refresh?: boolean;
+}) {
+  return request<DiscoveryRun>('/opportunity-discoveries', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function fetchDiscovery(runId: string) {
+  return request<DiscoveryRun>(`/opportunity-discoveries/${encodeURIComponent(runId)}`);
+}
+
+export function fetchDiscoveryResults(runId: string, limit = 20, offset = 0) {
+  return request<PaginatedOpportunities>(
+    `/opportunity-discoveries/${encodeURIComponent(runId)}/results?limit=${limit}&offset=${offset}`,
+  );
+}
+
+export function fetchOpportunity(opportunityId: string) {
+  return request<Opportunity>(`/opportunities/${encodeURIComponent(opportunityId)}`);
+}
+
+export function saveOpportunity(opportunityId: string, notes?: string) {
+  return request(`/opportunities/${encodeURIComponent(opportunityId)}/save`, {
+    method: 'POST',
+    body: JSON.stringify({ notes: notes ?? null }),
+  });
+}
+
+export function deleteSavedOpportunity(opportunityId: string) {
+  return request<void>(`/opportunities/${encodeURIComponent(opportunityId)}/save`, {
+    method: 'DELETE',
+  });
 }
