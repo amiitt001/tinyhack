@@ -766,6 +766,68 @@ select:focus {
 .coach-banner > div {
   flex: 1;
 }
+.coach-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 20px 0;
+}
+.coach-message {
+  max-width: 88%;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #202023;
+}
+.coach-message.user {
+  align-self: flex-end;
+  background: #35251d;
+  border: 1px solid #68412c;
+}
+.coach-message strong {
+  display: block;
+  color: #ff9a68;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.coach-message p {
+  color: #dedee2;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.coach-line {
+  display: block;
+  min-height: 1.7em;
+}
+.coach-line strong {
+  display: inline;
+  color: #f3f3f5;
+  font-size: inherit;
+  margin: 0;
+}
+.coach-list-line {
+  display: flex;
+  gap: 8px;
+}
+.coach-list-marker {
+  flex: 0 0 auto;
+  color: #ff986a;
+  font-weight: 600;
+}
+.coach-input {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+.coach-input input {
+  flex: 1;
+  min-width: 0;
+}
+.coach-input .button {
+  flex: 0 0 48px;
+  padding: 10px;
+}
 .coach-availability {
   font-size: 10px;
   color: #ae9788;

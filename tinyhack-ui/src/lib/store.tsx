@@ -3,10 +3,12 @@ import {
   ApiError,
   fetchProfile,
   fetchAnalyses,
+  fetchIntegrationStatus,
   fetchResumes,
   saveProfile,
   type BackendResume,
   type CareerAnalysis,
+  type IntegrationStatus,
 } from './api';
 
 export interface Profile {
@@ -41,6 +43,7 @@ interface State {
   analyses: CareerAnalysis[];
   backendLoading: boolean;
   backendError: string;
+  integrationStatus: IntegrationStatus | null;
   saved: string[];
   completed: string[];
   applications: Application[];
@@ -67,6 +70,7 @@ const initial: State = {
   analyses: [],
   backendLoading: true,
   backendError: '',
+  integrationStatus: null,
   saved: [],
   completed: [],
   applications: [],
@@ -122,11 +126,12 @@ export function Provider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    Promise.allSettled([fetchProfile(), fetchResumes(), fetchAnalyses()]).then(([profileResult, resumesResult, analysesResult]) => {
+    Promise.allSettled([fetchProfile(), fetchResumes(), fetchAnalyses(), fetchIntegrationStatus()]).then(([profileResult, resumesResult, analysesResult, integrationResult]) => {
       if (!active) return;
       const profile = profileResult.status === 'fulfilled' ? profileResult.value : null;
       const resumes = resumesResult.status === 'fulfilled' ? resumesResult.value : [];
       const analyses = analysesResult.status === 'fulfilled' ? analysesResult.value : [];
+      const integrationStatus = integrationResult.status === 'fulfilled' ? integrationResult.value : null;
       let remoteProfile: Profile | undefined;
       if (profile?.summary) {
         try {
@@ -135,7 +140,7 @@ export function Provider({ children }: { children: ReactNode }) {
           setMessage('Profile data from the backend could not be read.');
         }
       }
-      const failed = [profileResult, resumesResult, analysesResult].some(
+      const failed = [profileResult, resumesResult, analysesResult, integrationResult].some(
         (result) =>
           result.status === 'rejected' &&
           !(result.reason instanceof ApiError && result.reason.status === 404),
@@ -148,6 +153,7 @@ export function Provider({ children }: { children: ReactNode }) {
         analysis: analyses[0] || null,
         backendLoading: false,
         backendError: failed ? 'Some backend data could not be loaded.' : '',
+        integrationStatus,
       }));
     });
     return () => {

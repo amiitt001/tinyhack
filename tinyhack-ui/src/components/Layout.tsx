@@ -326,9 +326,11 @@ export default function Layout() {
         </header>
         <div className="demo-strip">
           <span>
-            <span className="status-dot" /> Local workspace{" "}
+            <span className="status-dot" /> SkillSphere workspace{" "}
             <span className="strip-extra">
-              · Live services are not connected
+              {state.integrationStatus?.status === "ready"
+                ? "· Live services connected"
+                : "· Live services are not connected"}
             </span>
           </span>
           <button onClick={() => update({ demo: !state.demo })}>

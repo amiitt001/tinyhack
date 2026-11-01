@@ -6,13 +6,15 @@ import Layout from "./components/Layout";
 import Overview from "./pages/Overview";
 import Profile, { Onboarding } from "./pages/Profile";
 import {
-  Opportunities,
   OpportunityDetail,
-  Explorer,
   Companies,
 } from "./pages/Discovery";
 import { Skills, Roadmap, Resume, Interview } from "./pages/Development";
-import { Applications, Monitor, Coach } from "./pages/Execution";
+import { Applications } from "./pages/Execution";
+import LiveCoach from "./pages/Coach";
+import CareerExplorer from "./pages/CareerExplorer";
+import LiveOpportunities from "./pages/LiveOpportunities";
+import LiveMonitor from "./pages/LiveMonitor";
 import {
   Notifications,
   ActivityPage,
@@ -32,8 +34,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route index element={<Overview />} />
             <Route path="profile" element={<Profile />} />
             <Route path="onboarding" element={<Onboarding />} />
-            <Route path="explorer" element={<Explorer />} />
-            <Route path="opportunities" element={<Opportunities />} />
+            <Route path="explorer" element={<CareerExplorer />} />
+            <Route path="opportunities" element={<LiveOpportunities />} />
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
             <Route path="companies" element={<Companies />} />
             <Route path="skills" element={<Skills />} />
@@ -41,8 +43,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="resume" element={<Resume />} />
             <Route path="interview" element={<Interview />} />
             <Route path="applications" element={<Applications />} />
-            <Route path="monitor" element={<Monitor />} />
-            <Route path="coach" element={<Coach />} />
+            <Route path="monitor" element={<LiveMonitor />} />
+            <Route path="coach" element={<LiveCoach />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="activity" element={<ActivityPage />} />
             <Route path="settings" element={<Settings />} />

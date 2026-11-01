@@ -92,12 +92,49 @@ export function fetchProfile() {
 }
 
 export function fetchIntegrationStatus() {
-  return request<{
-    status: string;
-    gemini: { configured: boolean; model: string };
-    tinyfish: { configured: boolean; agent_enabled: boolean };
-    supabase: { configured: boolean; storage_backend: string };
-  }>('/integrations');
+  return request<IntegrationStatus>('/integrations');
+}
+
+export type IntegrationStatus = {
+  status: string;
+  gemini: { configured: boolean; model: string };
+  tinyfish: { configured: boolean; agent_enabled: boolean };
+  supabase: { configured: boolean; storage_backend: string };
+};
+
+export function sendCoachMessage(message: string, profileSummary: string) {
+  return request<{ response: string; model: string }>('/coach', {
+    method: 'POST',
+    body: JSON.stringify({ message, profile_summary: profileSummary }),
+  });
+}
+
+export type CareerComparison = {
+  first_career: string;
+  second_career: string;
+  summary: string;
+  career_a_fit: string;
+  career_b_fit: string;
+  shared_skills: string[];
+  tradeoffs: string[];
+  recommended_next_step: string;
+  limitations: string[];
+  model: string;
+};
+
+export function compareCareers(
+  firstCareer: string,
+  secondCareer: string,
+  profileSummary: string,
+) {
+  return request<CareerComparison>('/career-comparisons', {
+    method: 'POST',
+    body: JSON.stringify({
+      first_career: firstCareer,
+      second_career: secondCareer,
+      profile_summary: profileSummary,
+    }),
+  });
 }
 
 export function fetchResumes() {
@@ -221,5 +258,40 @@ export function saveOpportunity(opportunityId: string, notes?: string) {
 export function deleteSavedOpportunity(opportunityId: string) {
   return request<void>(`/opportunities/${encodeURIComponent(opportunityId)}/save`, {
     method: 'DELETE',
+  });
+}
+
+export type TinyFishSearchResult = {
+  position: number;
+  title: string;
+  url: string;
+  site_name: string;
+  snippet: string;
+  date: string | null;
+  publisher: string | null;
+};
+
+export function searchOpportunities(query: string, location?: string, page = 0) {
+  return request<{
+    query: string;
+    results: TinyFishSearchResult[];
+    total_results: number;
+    page: number;
+  }>('/opportunity-tools/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, location, page }),
+  });
+}
+
+export function fetchOpportunityPage(url: string) {
+  return request<{
+    url: string;
+    final_url: string | null;
+    title: string | null;
+    text: string;
+    latency_ms: number | null;
+  }>('/opportunity-tools/fetch', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
   });
 }
